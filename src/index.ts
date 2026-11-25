@@ -1,4 +1,5 @@
 import './localization';
+import { bgm } from './bgm';
 import { initMapSelector } from './mapSelector';
 import options from './options';
 import { Roulette } from './roulette';
@@ -15,3 +16,4 @@ const roulette = new Roulette();
   initMapSelector({ roulette, apiBase: '', onMapChange, toast, mapBrowser: false });
 
 (window as any).options = options;
+(window as any).bgm = bgm;

@@ -35,6 +35,8 @@
 <body>
 <script type="module" src="./src/index.ts"></script>
 <script type="text/javascript">
+  const NAMES_KEY = 'bg_names_v1';
+
   function getNames() {
     const value = document.querySelector('#in_names').value.trim();
     return value.split(/[,\r\n]/g).map(v => v.trim()).filter(v => !!v);
@@ -59,7 +61,7 @@
     const names = getNames();
     window.roulette.setMarbles(names);
     ready = names.length > 0;
-    localStorage.setItem('mbr_names', names.join(','));
+    try { localStorage.setItem(NAMES_KEY, names.join(',')); } catch (e) {}
     applyWinnerSetting();
   }
 
@@ -119,7 +121,7 @@
 
 
   let ready = false;
-  let winnerType = 'first';
+  let winnerType = 'multi';
 
   document.addEventListener('DOMContentLoaded', () => {
     initialize();
@@ -139,7 +141,8 @@
     if (namesFromUrl) {
       document.querySelector('#in_names').value = namesFromUrl.replace(/,/g, '\n');
     } else {
-      const savedNames = localStorage.getItem('mbr_names');
+      let savedNames = null;
+      try { savedNames = localStorage.getItem(NAMES_KEY); } catch (e) {}
       if (savedNames) {
         document.querySelector('#in_names').value = savedNames;
       }
@@ -179,6 +182,16 @@
       }
     });
 
+    const bgmBtn = document.querySelector('#btnBgm');
+    const syncBgm = () => {
+      bgmBtn.querySelector('.bgm-label').textContent = window.bgm.muted ? '🔇 BGM' : '🔊 BGM';
+    };
+    bgmBtn.addEventListener('click', () => {
+      window.bgm.setMuted(!window.bgm.muted);
+      syncBgm();
+    });
+    syncBgm();
+
     document.querySelector('#btnShuffle').addEventListener('click', () => {
       getReady();
     });
@@ -186,6 +199,7 @@
     document.querySelector('#btnStart').addEventListener('click', () => {
       if (!ready) return;
       document.querySelector('#settings').classList.add('hide');
+      window.bgm && window.bgm.start();
       window.roulette.start();
     });
 
@@ -205,6 +219,8 @@
         syncResolutionButtons();
       });
     });
+    // BG 룰렛: 해상도는 Ultra 고정
+    window.roulette.setResolution('ultra');
     syncResolutionButtons();
 
     document.querySelector('#chkSkill').addEventListener('change', (e) => {
@@ -219,6 +235,7 @@
     document.querySelector('#in_rangeEnd').addEventListener('change', () => selectWinnerType('multi', 'end'));
 
     window.roulette.addEventListener('goal', () => {
+      window.bgm && window.bgm.win();
       ready = false;
       setTimeout(() => {
         document.querySelector('#settings').classList.remove('hide');
@@ -344,13 +361,13 @@
           <span data-trans>The winner is</span>
         </label>
         <div class="btn-group">
-          <button class="btn-winner btn-first-winner active" data-trans>First</button>
-          <button class="btn-winner btn-last-winner" data-trans>Last</button>
-          <input type="number" id="in_winningRank" value="1" min="1" />
-          <button class="btn-winner btn-multi-winner" data-trans>Multiple</button>
+          <button class="btn-winner btn-first-winner" style="display:none" data-trans>First</button>
+          <button class="btn-winner btn-last-winner" style="display:none" data-trans>Last</button>
+          <input type="number" id="in_winningRank" value="1" min="1" style="display:none" />
+          <button class="btn-winner btn-multi-winner active" data-trans>Multiple</button>
         </div>
       </div>
-      <div class="row row-range">
+      <div class="row row-range active">
         <label></label>
         <div class="btn-group range-group">
           <input type="number" id="in_rangeStart" value="1" min="1" />
@@ -364,8 +381,8 @@
           <span data-trans>Resolution</span>
         </label>
         <div class="btn-group resolution-group">
-          <button class="btn-resolution" data-resolution="default" data-trans>Default</button>
-          <button class="btn-resolution" data-resolution="high">High</button>
+          <button class="btn-resolution" data-resolution="default" style="display:none" data-trans>Default</button>
+          <button class="btn-resolution" data-resolution="high" style="display:none">High</button>
           <button class="btn-resolution" data-resolution="ultra">Ultra</button>
         </div>
       </div>
@@ -378,6 +395,9 @@
     <div class="actions">
       <button id="btnNotice">
         <i class="icon megaphone"></i>
+      </button>
+      <button id="btnBgm" title="배경음악 켜기/끄기">
+        <span class="bgm-label">🔊 BGM</span>
       </button>
       <div class="sep"></div>
       <button id="btnShuffle">
